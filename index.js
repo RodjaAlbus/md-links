@@ -24,7 +24,8 @@ module.exports.joinPath = (paths, paths2) => {
 }
 
 //console.log(module)*/
-let mdLinks = []
+
+
 module.exports.readFile = () => {
     //process.argv = [node, readDocument.js, ./, ./carpeta]   
     const initialDir = process.argv[2]
@@ -33,8 +34,15 @@ module.exports.readFile = () => {
         else {
             archivos.forEach(archivo => {
                 if (path.extname(archivo) === '.md') {
-                    mdLinks.push(path.join(initialDir, archivo))
-                    console.log('MD: ', mdLinks)  //guardar la ruta en un arreglo
+                    fs.readFile(path.join(initialDir, archivo), 'utf-8', (error, data) =>{
+                        if(error) console.log('error: ', error)
+                        else { 
+                            console.log('Found: ', archivo) 
+                            //find links
+                        }
+                    })
+
+
                 } else if (!archivo.includes('.')) {
                     process.argv[2] = path.join(initialDir, archivo)
                     console.log(process.argv[2])
@@ -43,5 +51,5 @@ module.exports.readFile = () => {
             })
         }
     })
-
 }
+
