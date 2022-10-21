@@ -14,13 +14,13 @@ const fileReader = (archivo, data) => {
             data[i + 4] === "p") {
             for (let y = i; y < data.length; y--) {
                 if (data[y] === "[") {
-                    text = data.substring(y - 1, i)
+                    text = data.substring(y, i)
                     break
                 }
             }
             for (let x = i; x < data.length; x++) {
                 if (data[x] === ')') {
-                    httpsArray.push({ href: data.substring(i, x + 1), text: text, file: archivo })
+                    httpsArray.push({ href: data.substring(i + 1, x), text: text, file: archivo })
                     break
                 }
             }
@@ -28,12 +28,15 @@ const fileReader = (archivo, data) => {
     }
 }
 
-module.exports.readFile = () => {
-    //Ahora hacerlo promesa. Y hacer que tenga validate y status. 
+module.exports = () => new Promise((resolve, reject) => {
+    //Tal vez refactorizar para reducir codigo
     if (path.extname(process.argv[2]) === '.md') {
         fs.readFile(process.argv[2], 'utf-8', (error, data) => {
-            if (error) console.log(error)
-            else fileReader(process.argv[2], data); console.log(httpsArray) 
+            if (error) { reject(error) }
+            else {
+                fileReader(process.argv[2], data)
+                resolve(httpsArray)
+            }
         })
     }
     else {
@@ -45,8 +48,11 @@ module.exports.readFile = () => {
                     if (path.extname(archivo) === '.md') {
                         const compoundPath = path.join(initialDir, archivo)
                         fs.readFile(compoundPath, 'utf-8', (error, data) => {
-                            if (error) console.log('error: ', error)
-                            else fileReader(compoundPath, data); console.log(httpsArray)
+                            if (error) reject(error)
+                            else {
+                                fileReader(compoundPath, data)
+                                resolve(httpsArray)
+                            }
                         })
                     } else if (!archivo.includes('.')) {
                         process.argv[2] = path.join(initialDir, archivo)
@@ -56,7 +62,7 @@ module.exports.readFile = () => {
                 })
             }
         })
-
     }
-}
+})
+
 

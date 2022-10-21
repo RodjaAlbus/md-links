@@ -25,5 +25,8 @@
   "bugs": {
     "url": "https://github.com/RodjaAlbus/md-links/issues"
   },
-  "homepage": "https://github.com/RodjaAlbus/md-links#readme"
+  "homepage": "https://github.com/RodjaAlbus/md-links#readme",
+  "dependencies": {
+    "axios": "^1.1.3"
+  }
 }
