@@ -5,6 +5,7 @@ const process = require('process')
 let httpsArray = []
 
 const fileReader = (archivo, data) => {
+    console.log('there: ', archivo)
     let text = ''
     for (let i = 0; i < data.length; i++) {//find links
         if (data[i] === '(' &&
@@ -50,14 +51,15 @@ module.exports = () => new Promise((resolve, reject) => {
                         fs.readFile(compoundPath, 'utf-8', (error, data) => {
                             if (error) reject(error)
                             else {
+                                console.log('here: ', archivo)
                                 fileReader(compoundPath, data)
                                 resolve(httpsArray)
                             }
                         })
-                    } else if (!archivo.includes('.')) {
+                    } else if (fs.lstatSync(path.join(initialDir, archivo)).isDirectory()) {
                         process.argv[2] = path.join(initialDir, archivo)
                         console.log(process.argv[2])
-                        this.readFile()
+                        module.exports()
                     }
                 })
             }
@@ -66,3 +68,4 @@ module.exports = () => new Promise((resolve, reject) => {
 })
 
 
+//Esperar para resolver
