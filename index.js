@@ -2,70 +2,60 @@ const fs = require('fs')
 const path = require('path')
 const process = require('process')
 
-let httpsArray = []
-
-const fileReader = (archivo, data) => {
-    console.log('there: ', archivo)
-    let text = ''
-    for (let i = 0; i < data.length; i++) {//find links
-        if (data[i] === '(' &&
-            data[i + 1] === "h" &&
-            data[i + 2] === "t" &&
-            data[i + 3] === "t" &&
-            data[i + 4] === "p") {
-            for (let y = i; y < data.length; y--) {
-                if (data[y] === "[") {
-                    text = data.substring(y, i)
-                    break
-                }
-            }
-            for (let x = i; x < data.length; x++) {
-                if (data[x] === ')') {
-                    httpsArray.push({ href: data.substring(i + 1, x), text: text, file: archivo })
-                    break
-                }
-            }
-        }
-    }
-}
-
+let directoryArray = []
 module.exports = () => new Promise((resolve, reject) => {
-    //Tal vez refactorizar para reducir codigo
-    if (path.extname(process.argv[2]) === '.md') {
-        fs.readFile(process.argv[2], 'utf-8', (error, data) => {
-            if (error) { reject(error) }
-            else {
-                fileReader(process.argv[2], data)
-                resolve(httpsArray)
+    fs.exists(process.argv[2], (exists) => { //Why
+        if (exists) {
+            if (fs.lstatSync(process.argv[2]).isDirectory()) {
+                resolve(dirGathererAzync(process.argv[2], []))
             }
-        })
-    }
-    else {
-        const initialDir = process.argv[2]
-        fs.readdir(initialDir, (err, archivos) => {
-            if (err) console.log(err)
-            else {
-                archivos.forEach(archivo => {
-                    if (path.extname(archivo) === '.md') {
-                        const compoundPath = path.join(initialDir, archivo)
-                        fs.readFile(compoundPath, 'utf-8', (error, data) => {
-                            if (error) reject(error)
-                            else {
-                                console.log('here: ', archivo)
-                                fileReader(compoundPath, data)
-                                resolve(httpsArray)
-                            }
-                        })
-                    } else if (fs.lstatSync(path.join(initialDir, archivo)).isDirectory()) {
-                        process.argv[2] = path.join(initialDir, archivo)
-                        console.log(process.argv[2])
-                        module.exports()
-                    }
-                })
-            }
-        })
-    }
+            else if (path.extname(process.argv[2]) === '.md') {
+                resolve([process.argv[2]])
+            } else reject('It is not an md file')
+        } else reject('The path does not exists')
+    })
 })
 
+const dirGatherer = (dir, array) => {
+    const pathsArray = array
+    fs.readdirSync(dir).forEach(file => {
+        const compoundPath = path.join(dir, file)
+        if (fs.lstatSync(compoundPath).isDirectory()) {
+            dirGatherer(compoundPath, pathsArray)
+        } else if (path.extname(compoundPath) === '.md') {
+            pathsArray.push(compoundPath)
+        }
+    })
+    return pathsArray //No lo regresa hasta que termino de llamarse todas las veces???
+}
+const dirGathererAzync = (dir, array) => {
+    const pathsArray = array
+    fs.readdir(dir, (err, data) => {
+        data.forEach(file => {
+            const compoundPath = path.join(dir, file)
+            if (fs.lstatSync(compoundPath).isDirectory()) {
+                dirGatherer(compoundPath, pathsArray)
+                console.log(pathsArray) // Vemos como se va construyendo el array con cada directorio
+            } else if (path.extname(compoundPath) === '.md') {
+                pathsArray.push(compoundPath)
+            }
+        })
+    })
+    return pathsArray // Lo regresa en el primer estad donde array es solo []
+}
 
-//Esperar para resolver
+/*const dirGatherer = () => {
+    if(contition) {
+        return 
+    }
+
+    dirGatherer()
+}*/
+
+const traverseSync = dir => ({
+    path: dir,
+    children: fs.readdirSync(dir).map(file => {
+        const Path = path.join(dir, file);
+        return fs.lstatSync(Path).isDirectory() ? traverseSync(Path) : { Path };
+    })
+});

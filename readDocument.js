@@ -1,24 +1,56 @@
 const mdLinks = require("./index.js")
 const process = require('process')
 const axios = require('axios')
+const fs = require("fs")
 
 mdLinks()
     .then((result) => {
         if (process.argv[3] === '--validate' &&
-        !process.argv[4]) {
-            validateLinks(result)
+            !process.argv[4]) {
+            console.log(validateLinks(getLinks(result)))
         }
         else if (process.argv[3] === '--stats' &&
-        !process.argv[4]) {
+            !process.argv[4]) {
             console.log(getStats(result))
         }
         else if (process.argv[3] === '--stats' &&
             process.argv[4] === '--validate') {
             console.log('this: ', statsAndValidation(result))
         }
-        else if (!process.argv[3]) console.log(result)
+        else if (!process.argv[3]) {
+            console.log(getLinks(result))
+        }
     })
     .catch((error) => { console.log(error) })
+
+const getLinks = (result) => {
+    let httpsArray = []
+    result.forEach(file => {
+        const data = fs.readFileSync(file).toString()
+        let text = ''
+        for (let i = 0; i < data.length; i++) {
+            if (data[i] === '(' &&
+                data[i + 1] === "h" &&
+                data[i + 2] === "t" &&
+                data[i + 3] === "t" &&
+                data[i + 4] === "p") {
+                for (let y = i; y < data.length; y--) {
+                    if (data[y] === "[") {
+                        text = data.substring(y, i)
+                        break
+                    }
+                }
+                for (let x = i; x < data.length; x++) {
+                    if (data[x] === ')') {
+                        httpsArray.push({ href: data.substring(i + 1, x), text: text, file: file })
+                        break
+                    }
+                }
+            }
+        }
+    })
+    return httpsArray
+}
 
 const validateLinks = (result) => {
     result.forEach(element => {
@@ -26,16 +58,18 @@ const validateLinks = (result) => {
             .get(element.href)
             .then((data) => {
                 element.statuscodigo = data.status
-                element.statustext = data.statusText 
-                console.log(result) //como hacer para que no se impriman tantas veces
+                element.statustext = data.statusText
+                // console.log(result) //como hacer para que no se impriman tantas veces
             })
             .catch((err) => {
                 element.statuscodigo = 'non-existent'
                 element.statustext = 'fail'
-                console.log(result)
+                //console.log(result)
             })
     })
 }
+
+const axiosLink = (link) => axios.get(link)
 
 const getStats = (result) => {
     let total = result.length
@@ -89,12 +123,12 @@ const statsAndValidation = (result) => {
                     // 
                     //retornar valor obtenido para promises all
                     //simplemente el estatus fallo. 
-                })                
+                })
             if (!element.duplicate) {
                 unique++
                 validateStats.Unique = unique
             }
         }
-    });    
+    });
     return validateStats
 }
