@@ -7,7 +7,7 @@ module.exports = () => new Promise((resolve, reject) => {
     fs.exists(process.argv[2], (exists) => { //Why
         if (exists) {
             if (fs.lstatSync(process.argv[2]).isDirectory()) {
-                resolve(dirGathererAzync(process.argv[2], []))
+                resolve(dirGatherer(process.argv[2], []))
             }
             else if (path.extname(process.argv[2]) === '.md') {
                 resolve([process.argv[2]])

@@ -7,15 +7,15 @@ mdLinks()
     .then((result) => {
         if (process.argv[3] === '--validate' &&
             !process.argv[4]) {
-            console.log(validateLinks(getLinks(result)))
+            Promise.all(validateLinks(getLinks(result))).then(console.log)
         }
         else if (process.argv[3] === '--stats' &&
             !process.argv[4]) {
-            console.log(getStats(result))
+            console.log(getStats(getLinks(result)))
         }
         else if (process.argv[3] === '--stats' &&
             process.argv[4] === '--validate') {
-            console.log('this: ', statsAndValidation(result))
+            Promise.all(validateLinks(getLinks(result))).then(data => console.log(getStats(data)))
         }
         else if (!process.argv[3]) {
             console.log(getLinks(result))
@@ -53,82 +53,44 @@ const getLinks = (result) => {
 }
 
 const validateLinks = (result) => {
-    result.forEach(element => {
-        axios
-            .get(element.href)
-            .then((data) => {
-                element.statuscodigo = data.status
-                element.statustext = data.statusText
-                // console.log(result) //como hacer para que no se impriman tantas veces
-            })
-            .catch((err) => {
-                element.statuscodigo = 'non-existent'
-                element.statustext = 'fail'
-                //console.log(result)
-            })
+    return result.map(element => axiosLink(element))
+}
+
+const axiosLink = (element) => axios.get(element.href)
+    .then(result => {
+        return { href: element.href, text: element.text, status: result.status, satusText: result.statusText }
     })
-}
+    .catch(() => {
+        return { href: element.href, text: element.text, status: 'NA', satusText: 'fail' }
+    })
 
-const axiosLink = (link) => axios.get(link)
-
-const getStats = (result) => {
-    let total = result.length
+const getStats = (links) => {
+    let total = links.length
     for (let i = 0; i < total; i++) {
         let duplicate = 0
         for (let j = 0; j < total; j++) {
             if (i !== j) {
-                if (result[i].href === result[j].href) {
+                if (links[i].href === links[j].href) {
                     duplicate++
-                    result[i].duplicate = duplicate
-                    result.splice(j, 1, '')
-                }
-            }
-        }
-    }
-    let unique = 0;
-    result.forEach(element => {
-        if (element.href && !element.duplicate) {
-            unique++
-        }
-    });
-    let stats = { Total: total, Unique: unique }
-    return stats
-}
-
-const statsAndValidation = (result) => {
-    let total = result.length
-    for (let i = 0; i < total; i++) {
-        let duplicate = 0
-        for (let j = 0; j < total; j++) {
-            if (i !== j) {
-                if (result[i].href === result[j].href) {
-                    duplicate++
-                    result[i].duplicate = duplicate
-                    result.splice(j, 1, '')
+                    links[i].duplicate = duplicate
+                    links.splice(j, 1, '')
                 }
             }
         }
     }
     let unique = 0
     let broken = 0
-    let validateStats = { Total: total, Unique: unique, Broken: broken }
-    result.forEach(element => {
-        if (element.href) {
-            axios
-                .get(element.href)
-                .catch(() => {
-                    broken++
-                    console.log(broken)
-                    validateStats.Broken = broken
-                    // 
-                    //retornar valor obtenido para promises all
-                    //simplemente el estatus fallo. 
-                })
-            if (!element.duplicate) {
-                unique++
-                validateStats.Unique = unique
-            }
+    links.forEach(element => {
+        if (element.href && !element.duplicate) {
+            unique++
         }
-    });
-    return validateStats
+        if (element.status && (element.status != "200" &&
+            element.status != "301" &&
+            element.status != "302")) {
+            broken++
+        }
+    })
+    return links[0].status
+        ? stats = { Total: total, Unique: unique, Broken: broken }
+        : stats = { Total: total, Unique: unique }
 }
