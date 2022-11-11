@@ -1,3 +1,6 @@
+#!/usr/bin/env node
+//Shebang
+
 const mdLinks = require("./index.js")
 const process = require('process')
 const axios = require('axios')

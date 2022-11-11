@@ -1,3 +1,6 @@
+#!/usr/bin/env node
+//Shebang
+
 const fs = require('fs')
 const path = require('path')
 const process = require('process')
@@ -43,14 +46,6 @@ const dirGathererAzync = (dir, array) => {
     })
     return pathsArray // Lo regresa en el primer estad donde array es solo []
 }
-
-/*const dirGatherer = () => {
-    if(contition) {
-        return 
-    }
-
-    dirGatherer()
-}*/
 
 const traverseSync = dir => ({
     path: dir,
